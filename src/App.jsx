@@ -18,17 +18,16 @@ function App() {
       );
 
       if (response.data.errors) {
-        const errorMessage = response.data.errors[0]?.message || 'Unknown error.';
-        throw new Error(errorMessage);
+        throw new Error(response.data.errors[0]?.message || 'Unknown error');
       }
 
       setUserData(response.data);
     } catch (err) {
-      if (err.message === 'That user does not exist.') {
-        setError('User not found. Please check the username and try again.');
-      } else {
-        setError('An error occurred while fetching data. Please try again later.');
-      }
+      setError(
+        err.message === 'That user does not exist.'
+          ? 'User not found. Please check the username.'
+          : 'An error occurred. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -36,108 +35,119 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (username) {
-      fetchSolvedData();
-    }
+    if (username) fetchSolvedData();
   };
 
   const downloadCard = () => {
     const card = document.getElementById('user-card');
     if (card) {
-      toPng(card)
+      toPng(card, { pixelRatio: 2 })
         .then((dataUrl) => {
           const link = document.createElement('a');
           link.href = dataUrl;
-          link.download = `${username}-leetcode-card.png`;
+          link.download = `${username}-leetcode-stats.png`;
           link.click();
         })
-        .catch((err) => {
-          console.error('Failed to download image:', err);
-        });
+        .catch((err) => console.error('Download failed:', err));
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 to-indigo-600 flex flex-col items-center justify-center p-6 text-white">
-      <h1 className="text-3xl font-extrabold mb-6">LeetCode User Profile</h1>
-      <form
-        onSubmit={handleSubmit}
-        className="flex items-center bg-white shadow-lg rounded-lg p-4 mb-8 space-x-4"
-      >
-        <input
-          type="text"
-          placeholder="Enter LeetCode username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 w-full shadow-2xl"
-        />
-        <button
-          type="submit"
-          className="cursor-pointer bg-blue-600 hover:bg-blue-700 px-6 py-2 text-white rounded-lg font-semibold shadow-md"
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 flex items-center justify-center p-6">
+      <div className="w-full max-w-2xl space-y-8">
+        <h1 className="text-4xl md:text-5xl font-bold text-white text-center bg-clip-text bg-gradient-to-r from-cyan-300 to-pink-300 animate-pulse">
+          LeetCode Profile Explorer
+        </h1>
+
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col sm:flex-row gap-4 bg-white/10 backdrop-blur-lg p-4 rounded-xl shadow-xl"
         >
-          Search
-        </button>
-      </form>
-
-      {loading && <p className="text-xl font-semibold">Loading...</p>}
-
-      {error && <p className="text-red-300 text-lg font-medium">{error}</p>}
-
-      {userData && (
-        <div>
-          <div
-            id="user-card"
-            className="bg-white text-gray-800 rounded-lg shadow-lg p-6 max-w-lg w-full mb-4"
+          <input
+            type="text"
+            placeholder="Enter LeetCode username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="flex-1 px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all duration-300"
+          />
+          <button
+            type="submit"
+            className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
           >
-            <h2 className="text-xl font-bold mb-4">{username}'s LeetCode Stats</h2>
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-blue-50 p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">Total Problems Solved</p>
-                <p className="text-xl font-semibold">{userData.solvedProblem}</p>
+            Explore
+          </button>
+        </form>
+
+        {loading && (
+          <div className="text-center">
+            <div className="inline-block w-8 h-8 border-4 border-t-cyan-500 border-r-transparent rounded-full animate-spin"></div>
+            <p className="text-white mt-2">Loading...</p>
+          </div>
+        )}
+
+        {error && (
+          <p className="text-center text-rose-300 bg-rose-900/20 p-3 rounded-lg animate-fade-in">
+            {error}
+          </p>
+        )}
+
+        {userData && (
+          <div className="animate-fade-in">
+            <div
+              id="user-card"
+              className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-6 text-gray-800 transform hover:scale-[1.02] transition-transform duration-300"
+            >
+              <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">
+                {username}'s LeetCode Journey
+              </h2>
+
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {[
+                  { label: 'Total Solved', value: userData.solvedProblem, color: 'bg-indigo-100' },
+                  { label: 'Easy', value: userData.easySolved, color: 'bg-emerald-100' },
+                  { label: 'Medium', value: userData.mediumSolved, color: 'bg-amber-100' },
+                  { label: 'Hard', value: userData.hardSolved, color: 'bg-rose-100' },
+                ].map((stat) => (
+                  <div
+                    key={stat.label}
+                    className={`${stat.color} p-4 rounded-xl shadow-md transform hover:scale-105 transition-all duration-300`}
+                  >
+                    <p className="text-sm text-gray-600">{stat.label}</p>
+                    <p className="text-2xl font-semibold text-gray-800">{stat.value}</p>
+                  </div>
+                ))}
               </div>
-              <div className="bg-green-50 p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">Easy Problems</p>
-                <p className="text-xl font-semibold">{userData.easySolved}</p>
-              </div>
-              <div className="bg-yellow-50 p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">Medium Problems</p>
-                <p className="text-xl font-semibold">{userData.mediumSolved}</p>
-              </div>
-              <div className="bg-red-50 p-4 rounded-lg shadow">
-                <p className="text-sm text-gray-600">Hard Problems</p>
-                <p className="text-xl font-semibold">{userData.hardSolved}</p>
-              </div>
+
+              {[
+                { title: 'Total Submissions', data: userData.totalSubmissionNum },
+                { title: 'Accepted Submissions', data: userData.acSubmissionNum },
+              ].map((section) => (
+                <div key={section.title} className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-3">{section.title}</h3>
+                  <ul className="space-y-2">
+                    {section.data.map((item, index) => (
+                      <li
+                        key={index}
+                        className="text-gray-600 bg-gray-50 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="font-medium">{item.difficulty}:</span> {item.count}{' '}
+                        problems ({item.submissions} submissions)
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
 
-            <h3 className="text-lg font-semibold mb-3">Total Submissions</h3>
-            <ul className="list-disc pl-5 mb-6">
-              {userData.totalSubmissionNum.map((item, index) => (
-                <li key={index} className="text-gray-700">
-                  <strong>{item.difficulty}:</strong> {item.count} problems (
-                  {item.submissions} submissions)
-                </li>
-              ))}
-            </ul>
-
-            <h3 className="text-lg font-semibold mb-3">Accepted Submissions</h3>
-            <ul className="list-disc pl-5">
-              {userData.acSubmissionNum.map((item, index) => (
-                <li key={index} className="text-gray-700">
-                  <strong>{item.difficulty}:</strong> {item.count} problems (
-                  {item.submissions} submissions)
-                </li>
-              ))}
-            </ul>
+            <button
+              onClick={downloadCard}
+              className="mt-4 w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-lg font-medium shadow-lg transition-all duration-300 transform hover:scale-105"
+            >
+              Download Stats Card
+            </button>
           </div>
-
-          <button
-            onClick={downloadCard}
-            className="cursor-pointer bg-green-500 hover:bg-green-600 px-4 py-2 text-white rounded-lg font-semibold shadow-md"
-          >
-            Download Card
-          </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
